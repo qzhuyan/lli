@@ -23,4 +23,12 @@ lli_nif_test_() ->
             ok
         end)
     ].
+
+lli_nif_unload_test_() ->
+    [
+        ?_assertMatch(false, code:purge(lli_nif)),
+        ?_assertMatch(true, code:delete(lli_nif)),
+        %% check that the module could be safely unloaded
+        ?_assertException(error, undef, lli_nif:module_info())
+    ].
 -endif.

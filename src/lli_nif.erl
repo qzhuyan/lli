@@ -9,6 +9,7 @@ mac_refcnt(_) ->
     not_loaded(?LINE).
 
 init() ->
+    LoadArg = 0,
     SoName =
         case code:priv_dir(?APPNAME) of
             {error, bad_name} ->
@@ -21,7 +22,21 @@ init() ->
             Dir ->
                 filename:join(Dir, ?LIBNAME)
         end,
-    erlang:load_nif(SoName, 0).
+    case load_patch() of
+        {true, Patch} ->
+            erlang:load_nif(Patch, LoadArg);
+        false ->
+            erlang:load_nif(SoName, LoadArg)
+    end.
 
 not_loaded(Line) ->
     erlang:nif_error({not_loaded, [{module, ?MODULE}, {line, Line}]}).
+
+load_patch()->
+    Patch = filename:join([data, patches, ?LIBNAME]),
+    case filelib:is_file(Patch++".so") of
+        true ->
+            {true, Patch};
+        false ->
+            false
+    end.
