@@ -1,0 +1,51 @@
+name: ci
+on: [push, pull_request]
+
+jobs:
+  formatting-check:
+    name: Formatting Check
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@a5ac7e51b41094c92402da3b24376905380afc29 # v4.1.6
+    - name: Run clang-format style check for C/C++/Protobuf programs.
+      uses: jidicula/clang-format-action@c74383674bf5f7c69f60ce562019c1c94bc1421a # v4.13.0
+      with:
+        clang-format-version: '14'
+        check-path: 'c_src'
+    - name: Prepare OTP and rebar3
+      uses: erlef/setup-beam@2f0cc07b4b9bea248ae098aba9e1a8a1de5ec24c # v1.17.5
+      with:
+        otp-version: 26
+        rebar3-version: 3.20.0
+    - name: Run erlfmt for erlang code
+      run: |
+        rebar3 fmt -c
+
+  linux:
+    needs: formatting-check
+    timeout-minutes: 25
+    strategy:
+      fail-fast: false
+      matrix:
+        # https://builds.hex.pm/builds/otp/ubuntu-22.04/builds.txt
+        otp:
+          - 26.2.5.3
+          - 27.1
+        rebar3:
+          - 3.23.0
+        os:
+          - ubuntu-22.04
+    runs-on: ${{ matrix.os }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@a5ac7e51b41094c92402da3b24376905380afc29 # v4.1.6
+        with:
+          submodules: recursive
+      - uses: erlef/setup-beam@2f0cc07b4b9bea248ae098aba9e1a8a1de5ec24c # v1.17.5
+        with:
+          otp-version: ${{ matrix.otp }}
+          rebar3-version: ${{ matrix.rebar3 }}
+
+      - name: run test
+        run: |
+          make test

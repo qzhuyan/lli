@@ -13,11 +13,16 @@ erl:
 	@echo "Compiling Erlang..."
 	rebar3 compile
 
+.PHONY: fmt
 fmt:
 	@clang-format-14 -i c_src/*
 	@rebar3 fmt
 
 all: nif erl
+
+.PHONY: test
+test:
+	@rebar3 eunit
 
 
 # end
