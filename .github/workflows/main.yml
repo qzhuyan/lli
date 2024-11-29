@@ -48,4 +48,4 @@ jobs:
 
       - name: run test
         run: |
-          make test
+          make && make test
