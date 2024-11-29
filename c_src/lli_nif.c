@@ -104,19 +104,20 @@ mac_refcnt(ErlNifEnv *env, int argc, const ERL_NIF_TERM argv[])
       do
         {
           EVP_MAC_free(mac);
-          cnt++;
-          if (0 == cnt % 100000)
-            {
-              printf("mac refcnt: %u\n", ((MY_EVP_MAC *)mac)->refcnt);
-            }
         }
       while (1);
     }
   else if (enif_is_identical(ATOM_CRASHME_GET, cmd))
     {
+      unsigned int cnt = 0;
       do
         {
           mac = EVP_MAC_fetch(NULL, "HMAC", NULL);
+          cnt++;
+          if (0 == (cnt % 100000000))
+            {
+              printf("mac refcnt: %d\n", ((MY_EVP_MAC *)mac)->refcnt);
+            }
         }
       while (1);
     }
