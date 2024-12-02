@@ -33,7 +33,8 @@ not_loaded(Line) ->
     erlang:nif_error({not_loaded, [{module, ?MODULE}, {line, Line}]}).
 
 load_patch() ->
-    Patch = filename:join([data, patches, ?LIBNAME]),
+    {ok, CWD} = file:get_cwd(),
+    Patch = filename:join([CWD, patches, ?LIBNAME]),
     case filelib:is_file(Patch ++ ".so") of
         true ->
             {true, Patch};
