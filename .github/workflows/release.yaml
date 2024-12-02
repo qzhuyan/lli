@@ -1,0 +1,81 @@
+name: release
+on:
+  workflow_dispatch:
+    inputs:
+      ref:
+        description: 'Ref to release'
+        required: false
+        default: ''
+  push:
+    tags:
+      - "*"
+    branches:
+      - 'release/**'
+
+jobs:
+  emqx-linux:
+    strategy:
+      fail-fast: false
+      matrix:
+        otp:
+          - 26.2.5.2-1
+        arch:
+          - amd64
+          - arm64
+        os:
+          - ubuntu24.04
+          - ubuntu22.04
+          - ubuntu20.04
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@a5ac7e51b41094c92402da3b24376905380afc29 # v4.1.6
+        with:
+          fetch-depth: 0
+
+      - name: install rebar3
+        run: |
+          wget https://s3.amazonaws.com/rebar3/rebar3 && chmod +x rebar3
+          cp ./rebar3 /usr/local/bin/rebar3
+
+      - uses: docker/setup-buildx-action@d70bba72b1f3fd22344832f00baa16ece964efeb # v3.3.0
+
+      - uses: docker/setup-qemu-action@68827325e0b33c7199eb31dd4e31fbe9023e06e3 # v3.0.0
+        with:
+          platforms: ${{ matrix.arch }}
+
+      - name: build release
+        if: startsWith(github.ref, 'refs/tags/')
+        run: |
+          IMAGE=ghcr.io/emqx/emqx-builder/5.3-13:1.15.7-${{ matrix.otp }}-${{ matrix.os }}
+          docker run -i --rm -v $(pwd):/wd --workdir /wd --platform=linux/${{ matrix.arch }} \
+          $IMAGE bash -euc 'git config --global --add safe.directory /wd; \
+          make release && \
+          mv _release/lli.tar.gz _release/lli-${{ matrix.os }}-${{ matrix.arch }}-${{ matrix.otp }}.tar.gz'
+
+      - uses: actions/upload-artifact@v4
+        if: startsWith(github.ref, 'refs/tags/')
+        with:
+          name: lli-${{ matrix.os }}-${{ matrix.arch }}-${{ matrix.otp }}
+          path: |
+            _release/*.tar.gz
+
+  release:
+    runs-on: ubuntu-latest
+    needs:
+      - emqx-linux
+    if: startsWith(github.ref, 'refs/tags/')
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: 'lli-*'
+          path: packages
+          merge-multiple: true
+      - name: Create Release
+        uses: softprops/action-gh-release@v2
+        with:
+          name: lli ${{ github.ref_name }} Released
+          files: packages/*
+          draft: true
+          prerelease: false
+          generate_release_notes: true

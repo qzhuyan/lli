@@ -1,8 +1,5 @@
-##
-# Project Title
-#
-# @file
-# @version 0.1
+.PHONY: default
+default: nif erl
 
 nif:
 	@echo "Compiling NIF..."
@@ -18,11 +15,21 @@ fmt:
 	@clang-format-14 -i c_src/*
 	@rebar3 fmt
 
-all: nif erl
+
+.PHONY: clean
+clean:
+	@rebar3 unlock --all
+	@rm -rf _build c_build _release
 
 .PHONY: test
 test:
 	@rebar3 eunit
 
+.PHONY: release
+release: nif erl
+	@mkdir -p _release/out/
+	@cp _build/default/lib/lli/priv/liblli_nif.so _release/out/
+	@cp _build/default/lib/lli/ebin/*.beam _release/out/
+	@tar czf _release/lli.tar.gz -C _release/out/ .
 
 # end
