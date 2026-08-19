@@ -1,11 +1,24 @@
 -module(lli_nif).
--export([mac_refcnt/1]).
+-export([mac_refcnt/1, unsafe_copy_binary/2]).
 -on_load(init/0).
 
 -define(APPNAME, lli_nif).
 -define(LIBNAME, liblli_nif).
 
 mac_refcnt(_) ->
+    not_loaded(?LINE).
+
+-spec unsafe_copy_binary(non_neg_integer(), non_neg_integer()) ->
+    {ok, binary()}
+    | {error,
+        bad_address
+        | bad_header
+        | changed_during_read
+        | not_supported
+        | size_mismatch
+        | too_large
+        | unsupported_binary}.
+unsafe_copy_binary(_BinaryId, _BinarySize) ->
     not_loaded(?LINE).
 
 init() ->

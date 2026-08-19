@@ -24,6 +24,34 @@ lli_nif_test_() ->
         end)
     ].
 
+process_binary_test_() ->
+    {setup,
+        fun() ->
+            Bin = binary:copy(<<0, 1, 2, 3, 4, 5, 6, 7>>, 512),
+            Pid = spawn(fun() -> binary_holder(Bin) end),
+            {Pid, Bin}
+        end,
+        fun({Pid, _Bin}) ->
+            Pid ! stop
+        end,
+        fun({Pid, Bin}) ->
+            {binary, BinaryInfos} = erlang:process_info(Pid, binary),
+            Size = byte_size(Bin),
+            Matching = [Info || Info = {_, BinarySize, _} <- BinaryInfos, BinarySize =:= Size],
+            ?assertMatch([_ | _], Matching),
+            [{BinaryId, Size, _} | _] = Matching,
+            [?_assertEqual({ok, Bin}, lli:process_binary(Pid, BinaryId))]
+        end}.
+
+binary_holder(Bin) ->
+    receive
+        {size, From} ->
+            From ! {size, byte_size(Bin)},
+            binary_holder(Bin);
+        stop ->
+            ok
+    end.
+
 lli_nif_unload_test_() ->
     [
         ?_assertMatch(false, code:purge(lli_nif)),
