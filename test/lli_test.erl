@@ -40,7 +40,11 @@ process_binary_test_() ->
             Matching = [Info || Info = {_, BinarySize, _} <- BinaryInfos, BinarySize =:= Size],
             ?assertMatch([_ | _], Matching),
             [{BinaryId, Size, _} | _] = Matching,
-            [?_assertEqual({ok, Bin}, lli:process_binary(Pid, BinaryId))]
+            [
+                ?_assertEqual({ok, Bin}, lli:process_binary(Pid, BinaryId)),
+                ?_assertEqual({error, badarg}, lli:process_binary(not_a_pid, BinaryId)),
+                ?_assertEqual({error, badarg}, lli:process_binary(Pid, -1))
+            ]
         end}.
 
 binary_holder(Bin) ->

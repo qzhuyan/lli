@@ -137,7 +137,7 @@ safe_read_self(void *destination, uintptr_t source, size_t size)
   int fd;
   unsigned char *dst = destination;
 
-  if (source > INT64_MAX)
+  if ((off_t)source < 0)
     {
       return 0;
     }
@@ -254,7 +254,7 @@ unsafe_copy_binary(ErlNifEnv *env, int argc, const ERL_NIF_TERM argv[])
 
   if (argc != 2 || !enif_get_uint64(env, argv[0], &address_arg)
       || !enif_get_uint64(env, argv[1], &size_arg) || address_arg == 0
-      || address_arg > UINTPTR_MAX || size_arg > SIZE_MAX)
+      || size_arg > SIZE_MAX)
     {
       return enif_make_badarg(env);
     }
@@ -262,8 +262,7 @@ unsafe_copy_binary(ErlNifEnv *env, int argc, const ERL_NIF_TERM argv[])
   address = (uintptr_t)address_arg;
   expected_size = (size_t)size_arg;
 
-  if ((address % sizeof(uintptr_t)) != 0
-      || address > UINTPTR_MAX - sizeof(LLI_BINARY_HEADER))
+  if (address > UINTPTR_MAX - sizeof(LLI_BINARY_HEADER))
     {
       return make_error(env, ATOM_BAD_ADDRESS);
     }

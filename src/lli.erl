@@ -58,7 +58,7 @@ process_binary(Pid, BinaryId) when is_pid(Pid), is_integer(BinaryId), BinaryId >
             {error, cannot_suspend}
     end;
 process_binary(_Pid, _BinaryId) ->
-    error(badarg).
+    {error, badarg}.
 
 -doc """
 Copies bytes from an ERTS `Binary *` address without suspending or checking its
